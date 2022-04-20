@@ -1,11 +1,13 @@
 {
   "private": true,
   "devDependencies": {
-    "typescript": "^4.6.3",
-    "vite": "^2.9.1",
+    "@types/mocha": "^9.1.0",
     "editorconfig": "^0.15.3",
+    "mocha": "^9.2.2",
     "shx": "^0.3.4",
-    "tslib": "^2.3.1"
+    "tslib": "^2.3.1",
+    "typescript": "^4.6.3",
+    "vite": "^2.9.1"
   },
   "resolutions": {
     "vscode-languageserver-types": "3.16.0"
@@ -13,6 +15,7 @@
   "scripts": {
     "clean": "npm run clean --workspaces",
     "compile": "npm run compile --workspaces",
+    "test":"mocha --recursive ./test/*.test.ts",
     "lint": "echo 'No linting yet'",
     "dev": "vite --debug",
     "start-server": "npm run start --workspace packages/examples/node",
@@ -26,7 +29,9 @@
   "workspaces": [
     "packages/client",
     "packages/examples/node",
-    "packages/examples/client",
-    "packages/examples/browser"
-  ]
+    "packages/examples/client"
+  ],
+  "dependencies": {
+    "antlr4ts-sql": "^1.1.0"
+  }
 }
