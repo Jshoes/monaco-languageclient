@@ -5,12 +5,13 @@
 import * as fs from "fs";
 import { xhr, getErrorStatusDescription } from "request-light";
 import { URI } from "vscode-uri";
+import { lint } from "sqlint";
 // import { antlr4tsSQL, SQLDialect } from "antlr4ts-sql";
 import { MessageReader, MessageWriter } from "vscode-jsonrpc";
 import {
   _Connection,
   TextDocuments,
-  DocumentSymbolParams,
+  // DocumentSymbolParams,
   createConnection,
 } from "vscode-languageserver/lib/node/main";
 import { mysqlKeywords } from "./mysqlKeywords";
@@ -19,8 +20,8 @@ import {
   Command,
   //   CompletionList,
   CompletionItem,
-  Hover,
-  SymbolInformation,
+  // Hover,
+  // SymbolInformation,
   TextEdit,
   // FoldingRange,
   // ColorInformation,
@@ -29,7 +30,7 @@ import {
 import {
   TextDocumentPositionParams,
   DocumentRangeFormattingParams,
-  ExecuteCommandParams,
+  // ExecuteCommandParams,
   CodeActionParams,
   // FoldingRangeParams,
   // DocumentColorParams,
@@ -96,11 +97,11 @@ export class SQLLspServer {
           },
           // hoverProvider: true,
           // documentSymbolProvider: true,
-          // documentRangeFormattingProvider: true,
-          // executeCommandProvider: {
-          //   commands: ["json.documentUpper"],
-          // },
-          colorProvider: true,
+          documentRangeFormattingProvider: true,
+          executeCommandProvider: {
+            commands: ["sql.documentUpper", "sql.2bemonster"],
+          },
+          // colorProvider: true,
           // foldingRangeProvider: true,
         },
       };
@@ -113,7 +114,7 @@ export class SQLLspServer {
     // this.connection.onDocumentSymbol((params) =>
     //   this.findDocumentSymbols(params)
     // );
-    // this.connection.onDocumentRangeFormatting((params) => this.format(params));
+    this.connection.onDocumentRangeFormatting((params) => this.format(params));
     // this.connection.onDocumentColor((params) =>
     //   this.findDocumentColors(params)
     // );
@@ -129,15 +130,25 @@ export class SQLLspServer {
 
   protected codeAction(params: CodeActionParams): Command[] {
     const document = this.documents.get(params.textDocument.uri);
-    console.log("in code action", document, "----", params.textDocument);
     if (!document) {
       return [];
     }
+
     return [
       {
         title: "Upper Case Document",
-        command: "json.documentUpper",
+        command: "sql.documentUpper",
         // Send a VersionedTextDocumentIdentifier
+        arguments: [
+          {
+            ...params.textDocument,
+            version: document.version,
+          },
+        ],
+      },
+      {
+        title: "Code 2 be master",
+        command: "sql.2bemonster",
         arguments: [
           {
             ...params.textDocument,
@@ -150,59 +161,66 @@ export class SQLLspServer {
 
   protected format(params: DocumentRangeFormattingParams): TextEdit[] {
     const document = this.documents.get(params.textDocument.uri);
-    // const antlr4tssql = new antlr4tsSQL(SQLDialect.MYSQL);
-    return document
-      ? this.jsonService.format(document, params.range, params.options)
-      : [];
+    const range = params.range;
+    const newText = JSON.parse(
+      lint({
+        text: document?.getText(),
+        formatType: "json",
+        fix: true,
+      })
+    ).pop()?.fixedText;
+
+    const textEdit = TextEdit.replace(range, newText);
+    return document ? [textEdit] : [];
   }
 
-  protected findDocumentSymbols(
-    params: DocumentSymbolParams
-  ): SymbolInformation[] {
-    const document = this.documents.get(params.textDocument.uri);
-    if (!document) {
-      return [];
-    }
-    const jsonDocument = this.getJSONDocument(document);
-    return this.jsonService.findDocumentSymbols(document, jsonDocument);
-  }
+  // protected findDocumentSymbols(
+  //   params: DocumentSymbolParams
+  // ): SymbolInformation[] {
+  //   const document = this.documents.get(params.textDocument.uri);
+  //   if (!document) {
+  //     return [];
+  //   }
+  //   const jsonDocument = this.getJSONDocument(document);
+  //   return this.jsonService.findDocumentSymbols(document, jsonDocument);
+  // }
 
-  protected executeCommand(params: ExecuteCommandParams): any {
-    if (params.command === "json.documentUpper" && params.arguments) {
-      const versionedTextDocumentIdentifier = params.arguments[0];
-      const document = this.documents.get(versionedTextDocumentIdentifier.uri);
-      if (document) {
-        this.connection.workspace.applyEdit({
-          documentChanges: [
-            {
-              textDocument: versionedTextDocumentIdentifier,
-              edits: [
-                {
-                  range: {
-                    start: { line: 0, character: 0 },
-                    end: {
-                      line: Number.MAX_SAFE_INTEGER,
-                      character: Number.MAX_SAFE_INTEGER,
-                    },
-                  },
-                  newText: document.getText().toUpperCase(),
-                },
-              ],
-            },
-          ],
-        });
-      }
-    }
-  }
+  // protected executeCommand(params: ExecuteCommandParams): any {
+  //   if (params.command === "json.documentUpper" && params.arguments) {
+  //     const versionedTextDocumentIdentifier = params.arguments[0];
+  //     const document = this.documents.get(versionedTextDocumentIdentifier.uri);
+  //     if (document) {
+  //       this.connection.workspace.applyEdit({
+  //         documentChanges: [
+  //           {
+  //             textDocument: versionedTextDocumentIdentifier,
+  //             edits: [
+  //               {
+  //                 range: {
+  //                   start: { line: 0, character: 0 },
+  //                   end: {
+  //                     line: Number.MAX_SAFE_INTEGER,
+  //                     character: Number.MAX_SAFE_INTEGER,
+  //                   },
+  //                 },
+  //                 newText: document.getText().toUpperCase(),
+  //               },
+  //             ],
+  //           },
+  //         ],
+  //       });
+  //     }
+  //   }
+  // }
 
-  protected hover(params: TextDocumentPositionParams): Thenable<Hover | null> {
-    const document = this.documents.get(params.textDocument.uri);
-    if (!document) {
-      return Promise.resolve(null);
-    }
-    const jsonDocument = this.getJSONDocument(document);
-    return this.jsonService.doHover(document, params.position, jsonDocument);
-  }
+  // protected hover(params: TextDocumentPositionParams): Thenable<Hover | null> {
+  //   const document = this.documents.get(params.textDocument.uri);
+  //   if (!document) {
+  //     return Promise.resolve(null);
+  //   }
+  //   const jsonDocument = this.getJSONDocument(document);
+  //   return this.jsonService.doHover(document, params.position, jsonDocument);
+  // }
 
   protected async resolveSchema(url: string): Promise<string> {
     const uri = URI.parse(url);
@@ -274,14 +292,34 @@ export class SQLLspServer {
   }
 
   protected doValidate(document: TextDocumentImpl.TextDocument): void {
-    if (document.getText().length === 0) {
+    const text = document.getText();
+    if (text.length === 0) {
       this.cleanDiagnostics(document);
       return;
     }
-    const jsonDocument = this.getJSONDocument(document);
-    this.jsonService
-      .doValidation(document, jsonDocument)
-      .then((diagnostics) => this.sendDiagnostics(document, diagnostics));
+
+    const diagnostics = JSON.parse(
+      lint({
+        text: text,
+        formatType: "json",
+        fix: false,
+      })
+    ).pop()?.diagnostics;
+    this.sendDiagnostics(document, diagnostics);
+
+    // const jsonDocument = this.getJSONDocument(document);
+    // this.jsonService
+    //   .doValidation(document, jsonDocument)
+    //   .then((diagnostics) => {
+    //     console.log(
+    //       diagnostics,
+    //       "in dovalidate dia",
+    //       jsonDocument,
+    //       "----",
+    //       document
+    //     );
+    //     this.sendDiagnostics(document, diagnostics);
+    //   });
   }
 
   protected cleanDiagnostics(document: TextDocumentImpl.TextDocument): void {
