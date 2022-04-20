@@ -5,7 +5,7 @@
 import * as fs from "fs";
 import { xhr, getErrorStatusDescription } from "request-light";
 import { URI } from "vscode-uri";
-import { antlr4tsSQL, SQLDialect } from "antlr4ts-sql";
+// import { antlr4tsSQL, SQLDialect } from "antlr4ts-sql";
 import { MessageReader, MessageWriter } from "vscode-jsonrpc";
 import {
   _Connection,
@@ -22,19 +22,19 @@ import {
   Hover,
   SymbolInformation,
   TextEdit,
-  FoldingRange,
-  ColorInformation,
-  ColorPresentation,
+  // FoldingRange,
+  // ColorInformation,
+  // ColorPresentation,
 } from "vscode-languageserver-types";
 import {
   TextDocumentPositionParams,
   DocumentRangeFormattingParams,
   ExecuteCommandParams,
   CodeActionParams,
-  FoldingRangeParams,
-  DocumentColorParams,
-  ColorPresentationParams,
-  TextDocumentSyncKind,
+  // FoldingRangeParams,
+  // DocumentColorParams,
+  // ColorPresentationParams,
+  // TextDocumentSyncKind,
 } from "vscode-languageserver-protocol";
 import {
   getLanguageService,
@@ -46,14 +46,14 @@ import * as TextDocumentImpl from "vscode-languageserver-textdocument";
 export function start(
   reader: MessageReader,
   writer: MessageWriter
-): JsonServer {
+): SQLLspServer {
   const connection = createConnection(reader, writer);
-  const server = new JsonServer(connection);
+  const server = new SQLLspServer(connection);
   server.start();
   return server;
 }
 
-export class JsonServer {
+export class SQLLspServer {
   protected workspaceRoot: URI | undefined;
 
   protected readonly documents = new TextDocuments(
@@ -88,83 +88,48 @@ export class JsonServer {
       this.connection.console.log("The server is initialized.");
       return {
         capabilities: {
-          textDocumentSync: TextDocumentSyncKind.Incremental,
+          // textDocumentSync: TextDocumentSyncKind.Incremental,
           codeActionProvider: true,
           completionProvider: {
             resolveProvider: true,
             triggerCharacters: ['"', ":", " "],
           },
-          hoverProvider: true,
-          documentSymbolProvider: true,
-          documentRangeFormattingProvider: true,
-          executeCommandProvider: {
-            commands: ["json.documentUpper"],
-          },
+          // hoverProvider: true,
+          // documentSymbolProvider: true,
+          // documentRangeFormattingProvider: true,
+          // executeCommandProvider: {
+          //   commands: ["json.documentUpper"],
+          // },
           colorProvider: true,
-          foldingRangeProvider: true,
+          // foldingRangeProvider: true,
         },
       };
     });
     this.connection.onCodeAction((params) => this.codeAction(params));
     this.connection.onCompletion((params) => this.completion(params));
     this.connection.onCompletionResolve((item) => this.resolveCompletion(item));
-    this.connection.onExecuteCommand((params) => this.executeCommand(params));
-    this.connection.onHover((params) => this.hover(params));
-    this.connection.onDocumentSymbol((params) =>
-      this.findDocumentSymbols(params)
-    );
-    this.connection.onDocumentRangeFormatting((params) => this.format(params));
-    this.connection.onDocumentColor((params) =>
-      this.findDocumentColors(params)
-    );
-    this.connection.onColorPresentation((params) =>
-      this.getColorPresentations(params)
-    );
-    this.connection.onFoldingRanges((params) => this.getFoldingRanges(params));
+    // this.connection.onExecuteCommand((params) => this.executeCommand(params));
+    // this.connection.onHover((params) => this.hover(params));
+    // this.connection.onDocumentSymbol((params) =>
+    //   this.findDocumentSymbols(params)
+    // );
+    // this.connection.onDocumentRangeFormatting((params) => this.format(params));
+    // this.connection.onDocumentColor((params) =>
+    //   this.findDocumentColors(params)
+    // );
+    // this.connection.onColorPresentation((params) =>
+    //   this.getColorPresentations(params)
+    // );
+    // this.connection.onFoldingRanges((params) => this.getFoldingRanges(params));
   }
 
   start() {
     this.connection.listen();
   }
 
-  protected getFoldingRanges(params: FoldingRangeParams): FoldingRange[] {
-    const document = this.documents.get(params.textDocument.uri);
-    if (!document) {
-      return [];
-    }
-    return this.jsonService.getFoldingRanges(document);
-  }
-
-  protected findDocumentColors(
-    params: DocumentColorParams
-  ): Thenable<ColorInformation[]> {
-    const document = this.documents.get(params.textDocument.uri);
-    if (!document) {
-      return Promise.resolve([]);
-    }
-    const jsonDocument = this.getJSONDocument(document);
-    return this.jsonService.findDocumentColors(document, jsonDocument);
-  }
-
-  protected getColorPresentations(
-    params: ColorPresentationParams
-  ): ColorPresentation[] {
-    const document = this.documents.get(params.textDocument.uri);
-    if (!document) {
-      return [];
-    }
-    const jsonDocument = this.getJSONDocument(document);
-    return this.jsonService.getColorPresentations(
-      document,
-      jsonDocument,
-      params.color,
-      params.range
-    );
-  }
-
   protected codeAction(params: CodeActionParams): Command[] {
     const document = this.documents.get(params.textDocument.uri);
-    console.log("in code action", document);
+    console.log("in code action", document, "----", params.textDocument);
     if (!document) {
       return [];
     }
@@ -185,19 +150,7 @@ export class JsonServer {
 
   protected format(params: DocumentRangeFormattingParams): TextEdit[] {
     const document = this.documents.get(params.textDocument.uri);
-    const antlr4tssql = new antlr4tsSQL(SQLDialect.MYSQL);
-    console.log(
-      "document gettext",
-      document?.getText(),
-      "in server format ",
-      params,
-      "123123",
-      antlr4tssql.getParseTreeFromSQL("SELECT * FROM table1"),
-      "----",
-      document
-        ? this.jsonService.format(document, params.range, params.options)
-        : []
-    );
+    // const antlr4tssql = new antlr4tsSQL(SQLDialect.MYSQL);
     return document
       ? this.jsonService.format(document, params.range, params.options)
       : [];
@@ -274,7 +227,6 @@ export class JsonServer {
   }
 
   protected resolveCompletion(item: CompletionItem): Thenable<CompletionItem> {
-    console.log("in resolve", item, "-----", this.jsonService.doResolve(item));
     return this.jsonService.doResolve(item);
   }
 
@@ -286,13 +238,8 @@ export class JsonServer {
       return Promise.resolve(null);
     }
     // const jsonDocument = this.getJSONDocument(document);
-    const text = document?.getText();
-    const antlr4tssql = new antlr4tsSQL(SQLDialect.MYSQL);
-    console.log(
-      "sql parse tree from sql",
-      antlr4tssql.getParseTreeFromSQL(text)
-    );
-    console.log("----", text);
+    // const text = document?.getText();
+    // const antlr4tssql = new antlr4tsSQL(SQLDialect.MYSQL);
 
     return new Promise((res) => {
       res(

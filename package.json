@@ -15,7 +15,7 @@
     "compile": "npm run compile --workspaces",
     "lint": "echo 'No linting yet'",
     "dev": "vite --debug",
-    "start-example-node": "npm run start --workspace packages/examples/node",
+    "start-server": "npm run start --workspace packages/examples/node",
     "start-example-node:ext": "npm run start:ext --workspace packages/examples/node",
     "build": "npm run build --workspaces",
     "build-client": "npm run build --workspace packages/client",
