@@ -3,13 +3,14 @@
   "private": true,
   "version": "0.19.0-next.1",
   "dependencies": {
-    "@types/ws": "^8.5.3",
     "@codingame/monaco-jsonrpc": "^0.3.1",
+    "@types/ws": "^8.5.3",
+    "antlr4ts-sql": "^1.1.0",
     "express": "^4.17.3",
+    "normalize-url": "^7.0.3",
     "request-light": "^0.5.7",
     "vscode-json-languageservice": "^4.2.1",
     "vscode-languageserver": "7.0.0",
-    "normalize-url": "^7.0.3",
     "vscode-uri": "^3.0.3",
     "ws": "^8.5.0"
   },
