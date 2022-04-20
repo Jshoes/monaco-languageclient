@@ -5,6 +5,7 @@ describe("antrl4ts-sql test describe(mysql)", () => {
   it("antrl sql parse tree", () => {
     const antlr4tssql = new antlr4tsSQL(SQLDialect.MYSQL);
     const query = "SELECT * FROM table1";
+    // antlr4tssql.getParser()
     const parseTree = antlr4tssql.getParseTreeFromSQL(query);
     //@ts-ignore
     console.log(parseTree, 11111111, parseTree.children);
