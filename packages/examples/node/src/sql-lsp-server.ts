@@ -298,28 +298,66 @@ export class SQLLspServer {
       return;
     }
 
-    const diagnostics = JSON.parse(
-      lint({
-        text: text,
-        formatType: "json",
-        fix: false,
-      })
-    ).pop()?.diagnostics;
-    this.sendDiagnostics(document, diagnostics);
-
-    // const jsonDocument = this.getJSONDocument(document);
-    // this.jsonService
-    //   .doValidation(document, jsonDocument)
-    //   .then((diagnostics) => {
-    //     console.log(
-    //       diagnostics,
-    //       "in dovalidate dia",
-    //       jsonDocument,
-    //       "----",
-    //       document
-    //     );
-    //     this.sendDiagnostics(document, diagnostics);
-    //   });
+    try {
+      const diagnostics: Diagnostic[] = JSON.parse(
+        lint({
+          text: text,
+          formatType: "json",
+          fix: true,
+        })
+      )
+        .pop()
+        ?.diagnostics?.map(
+          (dia: {
+            location: {
+              start: Record<"offset" | "line" | "column", number>;
+              end: Record<"offset" | "line" | "column", number>;
+            };
+            message: string;
+            errorLevel: number;
+            rulename: string;
+          }) => ({
+            range: {
+              start: {
+                line: dia.location.start.line,
+                character: dia.location.start.column,
+              },
+              end: {
+                line: dia.location.end.line,
+                character: dia.location.end.column,
+              },
+            },
+            message: dia.message,
+            severity: dia.errorLevel,
+          })
+        );
+      // console.log(
+      //   111111,
+      //   diagnostics,
+      //   "0 start",
+      //   diagnostics[0].range.start,
+      //   "---",
+      //   diagnostics[0].range.end
+      // );
+      this.sendDiagnostics(document, diagnostics);
+    } catch (error: any) {
+      const diagnostics = [
+        {
+          range: {
+            start: {
+              line: error.location.start.line,
+              character: error.location.start.column,
+            },
+            end: {
+              line: error.location.end.line,
+              character: error.location.end.column,
+            },
+          },
+          message: error.message,
+        },
+      ];
+      this.sendDiagnostics(document, diagnostics);
+    }
   }
 
   protected cleanDiagnostics(document: TextDocumentImpl.TextDocument): void {
