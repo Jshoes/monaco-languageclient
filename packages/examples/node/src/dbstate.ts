@@ -5,6 +5,7 @@ const disConnectedStatus = "disconnected";
 export default class DbState {
   private connection: mysql.Connection;
   private tables: string[] = [];
+  private databases: string[] = [];
   constructor() {
     this.connection = mysql.createConnection({
       host: "127.0.0.1",
@@ -15,6 +16,7 @@ export default class DbState {
 
     this.connection.connect();
     this.queryTables();
+    this.queryDatabases();
   }
 
   private queryTables() {
@@ -30,8 +32,21 @@ export default class DbState {
     );
   }
 
+  private queryDatabases() {
+    this.connection.query("show databases;", (_, result) => {
+      if (this.isConnectionDisConnected()) {
+        return;
+      }
+      this.databases = result.map((r: any) => r.Database);
+    });
+  }
+
   public getTables() {
     return this.tables;
+  }
+
+  public getDatabases() {
+    return this.databases;
   }
 
   public queryColumns(tableName: string) {
