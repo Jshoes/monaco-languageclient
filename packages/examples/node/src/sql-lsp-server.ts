@@ -44,6 +44,8 @@ import {
 } from "vscode-json-languageservice";
 import * as TextDocumentImpl from "vscode-languageserver-textdocument";
 
+import DbState from "./dbstate";
+
 export function start(
   reader: MessageReader,
   writer: MessageWriter
@@ -65,12 +67,15 @@ export class SQLLspServer {
     schemaRequestService: this.resolveSchema.bind(this),
   });
 
+  private DbState: DbState;
+
   protected readonly pendingValidationRequests = new Map<
     string,
     NodeJS.Timeout
   >();
 
   constructor(protected readonly connection: _Connection) {
+    this.DbState = new DbState();
     this.documents.listen(this.connection);
     this.documents.onDidChangeContent((change) =>
       this.validate(change.document)
@@ -251,13 +256,28 @@ export class SQLLspServer {
   protected completion(
     params: TextDocumentPositionParams
   ): Thenable<CompletionItem[] | null> {
+    // console.log("complete", params);
     const document = this.documents.get(params.textDocument.uri);
     if (!document) {
       return Promise.resolve(null);
     }
+    const tables = this.DbState.getTables();
+    // console.log(this.DbState.getTables());
     // const jsonDocument = this.getJSONDocument(document);
-    // const text = document?.getText();
+    const text = document?.getText();
     // const antlr4tssql = new antlr4tsSQL(SQLDialect.MYSQL);
+
+    if (tables.some((t) => t.includes(text))) {
+      return new Promise((res) => {
+        res(
+          tables.map((t: string) => ({
+            label: t,
+            kind: 2,
+            detail: "table",
+          }))
+        );
+      });
+    }
 
     return new Promise((res) => {
       res(

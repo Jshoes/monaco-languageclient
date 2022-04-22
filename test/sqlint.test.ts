@@ -26,7 +26,7 @@ describe("sql lint test ", () => {
   });
 
   it("sql lint result ", () => {
-    const query = 'select * from TABLE_NAME WHILE SCHEMA_NAME == "djkf"';
+    const query = "select * from TABLE_NAME;";
 
     const lintQuery = lint({
       text: query,
