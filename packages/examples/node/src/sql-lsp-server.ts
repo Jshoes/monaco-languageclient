@@ -6,7 +6,7 @@ import * as fs from "fs";
 import { xhr, getErrorStatusDescription } from "request-light";
 import { URI } from "vscode-uri";
 import { lint } from "sqlint";
-// import { antlr4tsSQL, SQLDialect } from "antlr4ts-sql";
+import { antlr4tsSQL, SQLDialect } from "antlr4ts-sql";
 import { MessageReader, MessageWriter } from "vscode-jsonrpc";
 import {
   _Connection,
@@ -45,6 +45,8 @@ import {
 import * as TextDocumentImpl from "vscode-languageserver-textdocument";
 
 import DbState from "./dbstate";
+
+type TCompletionType = "keyword" | "table" | "database" | "columns";
 
 export function start(
   reader: MessageReader,
@@ -253,27 +255,71 @@ export class SQLLspServer {
     return this.jsonService.doResolve(item);
   }
 
+  private getCompletionType(): TCompletionType {
+    return "table";
+  }
+
   protected completion(
     params: TextDocumentPositionParams
   ): Thenable<CompletionItem[] | null> {
-    // console.log("complete", params);
     const document = this.documents.get(params.textDocument.uri);
+    console.log("complete", params, "-----", document);
     if (!document) {
       return Promise.resolve(null);
     }
-    const tables = this.DbState.getTables();
+
+    const completionType = this.getCompletionType();
     // console.log(this.DbState.getTables());
     // const jsonDocument = this.getJSONDocument(document);
-    const text = document?.getText();
-    // const antlr4tssql = new antlr4tsSQL(SQLDialect.MYSQL);
+    // const text = document?.getText();
+    const antlr4tssql = new antlr4tsSQL(SQLDialect.MYSQL);
+    const antrlObj = antlr4tssql.getParseTreeFromSQL('select * from "user";');
+    // const antrdd = antlr4tssql.getParser();
+    // const antrparse = antlr4tssql.getParseTree();
 
-    if (tables.some((t) => t.includes(text))) {
+    console.log(
+      "antrlObj string",
+      antrlObj.toStringTree(),
+      antrlObj.childCount,
+      "----",
+      antrlObj.getChild(0).toStringTree()
+    );
+
+    if (completionType === "columns") {
+      return new Promise((res) => {
+        const tableName = "";
+        this.DbState.queryColumns(tableName, (result) => {
+          res(
+            result.map((t: string) => ({
+              label: t,
+              kind: 2,
+              detail: "columns",
+            }))
+          );
+        });
+      });
+    }
+
+    if (completionType === "table") {
+      const tables = this.DbState.getTables();
       return new Promise((res) => {
         res(
           tables.map((t: string) => ({
             label: t,
             kind: 2,
             detail: "table",
+          }))
+        );
+      });
+    }
+    if (completionType === "database") {
+      const dbs = this.DbState.getDatabases();
+      return new Promise((res) => {
+        res(
+          dbs.map((t: string) => ({
+            label: t,
+            kind: 2,
+            detail: "databse",
           }))
         );
       });

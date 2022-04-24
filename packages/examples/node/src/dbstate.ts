@@ -49,11 +49,11 @@ export default class DbState {
     return this.databases;
   }
 
-  public queryColumns(tableName: string) {
+  public queryColumns(tableName: string, callback: (result: any) => void) {
     this.connection.query(
       `select COLUMN_NAME from information_schema.COLUMNS where table_name = "${tableName}";`,
       (_, result) => {
-        console.log(result);
+        callback(this.isConnectionDisConnected() ? [] : result);
       }
     );
   }
