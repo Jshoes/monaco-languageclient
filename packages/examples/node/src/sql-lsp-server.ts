@@ -256,7 +256,7 @@ export class SQLLspServer {
   }
 
   private getCompletionType(): TCompletionType {
-    return "table";
+    return "keyword";
   }
 
   protected completion(

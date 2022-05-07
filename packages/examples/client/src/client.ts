@@ -66,7 +66,7 @@ monaco.editor.create(document.getElementById("container")!, {
 MonacoServices.install(monaco);
 
 // create the web socket
-const url = createUrl("localhost", 3000, "/sampleServer");
+const url = createUrl("localhost", 3030, "/sampleServer");
 const webSocket = new WebSocket(url);
 
 // listen when the web socket is opened
