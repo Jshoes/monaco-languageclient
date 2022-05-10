@@ -6,7 +6,7 @@ import * as fs from "fs";
 import { xhr, getErrorStatusDescription } from "request-light";
 import { URI } from "vscode-uri";
 import { lint } from "sqlint";
-import { antlr4tsSQL, SQLDialect } from "antlr4ts-sql";
+// import { antlr4tsSQL, SQLDialect } from "antlr4ts-sql";
 import { MessageReader, MessageWriter } from "vscode-jsonrpc";
 import { format } from "sql-formatter";
 import {
@@ -202,7 +202,6 @@ export class SQLLspServer {
     }
     const versionedTextDocumentIdentifier = params.arguments[0];
     const document = this.documents.get(versionedTextDocumentIdentifier.uri);
-    console.log(params);
     if (params.command === "sql.documentUpper" && document) {
       this.connection.workspace.applyEdit({
         documentChanges: [
@@ -290,7 +289,7 @@ export class SQLLspServer {
     params: TextDocumentPositionParams
   ): Thenable<CompletionItem[] | null> {
     const document = this.documents.get(params.textDocument.uri);
-    console.log("complete", params, "-----", document);
+    // console.log("complete", params, "-----", document);
     if (!document) {
       return Promise.resolve(null);
     }
@@ -299,18 +298,18 @@ export class SQLLspServer {
     // console.log(this.DbState.getTables());
     // const jsonDocument = this.getJSONDocument(document);
     // const text = document?.getText();
-    const antlr4tssql = new antlr4tsSQL(SQLDialect.MYSQL);
-    const antrlObj = antlr4tssql.getParseTreeFromSQL('select * from "user";');
+    // const antlr4tssql = new antlr4tsSQL(SQLDialect.MYSQL);
+    // const antrlObj = antlr4tssql.getParseTreeFromSQL('select * from "user";');
     // const antrdd = antlr4tssql.getParser();
     // const antrparse = antlr4tssql.getParseTree();
 
-    console.log(
-      "antrlObj string",
-      antrlObj.toStringTree(),
-      antrlObj.childCount,
-      "----",
-      antrlObj.getChild(0).toStringTree()
-    );
+    // console.log(
+    //   "antrlObj string",
+    //   antrlObj.toStringTree(),
+    //   antrlObj.childCount,
+    //   "----",
+    //   antrlObj.getChild(0).toStringTree()
+    // );
 
     if (completionType === "columns") {
       return new Promise((res) => {
