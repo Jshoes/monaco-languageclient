@@ -8,6 +8,7 @@ import { URI } from "vscode-uri";
 import { lint } from "sqlint";
 import { antlr4tsSQL, SQLDialect } from "antlr4ts-sql";
 import { MessageReader, MessageWriter } from "vscode-jsonrpc";
+import { format } from "sql-formatter";
 import {
   _Connection,
   TextDocuments,
@@ -30,7 +31,7 @@ import {
 import {
   TextDocumentPositionParams,
   DocumentRangeFormattingParams,
-  // ExecuteCommandParams,
+  ExecuteCommandParams,
   CodeActionParams,
   // FoldingRangeParams,
   // DocumentColorParams,
@@ -106,7 +107,7 @@ export class SQLLspServer {
           // documentSymbolProvider: true,
           documentRangeFormattingProvider: true,
           executeCommandProvider: {
-            commands: ["sql.documentUpper", "sql.2bemonster"],
+            commands: ["sql.documentUpper", "sql.format"],
           },
           // colorProvider: true,
           // foldingRangeProvider: true,
@@ -116,7 +117,7 @@ export class SQLLspServer {
     this.connection.onCodeAction((params) => this.codeAction(params));
     this.connection.onCompletion((params) => this.completion(params));
     this.connection.onCompletionResolve((item) => this.resolveCompletion(item));
-    // this.connection.onExecuteCommand((params) => this.executeCommand(params));
+    this.connection.onExecuteCommand((params) => this.executeCommand(params));
     // this.connection.onHover((params) => this.hover(params));
     // this.connection.onDocumentSymbol((params) =>
     //   this.findDocumentSymbols(params)
@@ -154,12 +155,13 @@ export class SQLLspServer {
         ],
       },
       {
-        title: "Code 2 be master",
-        command: "sql.2bemonster",
+        title: "format",
+        command: "sql.format",
         arguments: [
           {
             ...params.textDocument,
             version: document.version,
+            params,
           },
         ],
       },
@@ -169,13 +171,14 @@ export class SQLLspServer {
   protected format(params: DocumentRangeFormattingParams): TextEdit[] {
     const document = this.documents.get(params.textDocument.uri);
     const range = params.range;
-    const newText = JSON.parse(
-      lint({
-        text: document?.getText(),
-        formatType: "json",
-        fix: true,
-      })
-    ).pop()?.fixedText;
+    // const newText = JSON.parse(
+    //   lint({
+    //     text: document?.getText(),
+    //     formatType: "json",
+    //     fix: true,
+    //   })
+    // ).pop()?.fixedText;
+    const newText = format(document?.getText() as string);
 
     const textEdit = TextEdit.replace(range, newText);
     return document ? [textEdit] : [];
@@ -192,33 +195,57 @@ export class SQLLspServer {
   //   return this.jsonService.findDocumentSymbols(document, jsonDocument);
   // }
 
-  // protected executeCommand(params: ExecuteCommandParams): any {
-  //   if (params.command === "json.documentUpper" && params.arguments) {
-  //     const versionedTextDocumentIdentifier = params.arguments[0];
-  //     const document = this.documents.get(versionedTextDocumentIdentifier.uri);
-  //     if (document) {
-  //       this.connection.workspace.applyEdit({
-  //         documentChanges: [
-  //           {
-  //             textDocument: versionedTextDocumentIdentifier,
-  //             edits: [
-  //               {
-  //                 range: {
-  //                   start: { line: 0, character: 0 },
-  //                   end: {
-  //                     line: Number.MAX_SAFE_INTEGER,
-  //                     character: Number.MAX_SAFE_INTEGER,
-  //                   },
-  //                 },
-  //                 newText: document.getText().toUpperCase(),
-  //               },
-  //             ],
-  //           },
-  //         ],
-  //       });
-  //     }
-  //   }
-  // }
+  protected executeCommand(params: ExecuteCommandParams): any {
+    if (!params.arguments) {
+      // arguments 为空 return
+      return;
+    }
+    const versionedTextDocumentIdentifier = params.arguments[0];
+    const document = this.documents.get(versionedTextDocumentIdentifier.uri);
+    console.log(params);
+    if (params.command === "sql.documentUpper" && document) {
+      this.connection.workspace.applyEdit({
+        documentChanges: [
+          {
+            textDocument: versionedTextDocumentIdentifier,
+            edits: [
+              {
+                range: {
+                  start: { line: 0, character: 0 },
+                  end: {
+                    line: Number.MAX_SAFE_INTEGER,
+                    character: Number.MAX_SAFE_INTEGER,
+                  },
+                },
+                newText: document.getText().toUpperCase(),
+              },
+            ],
+          },
+        ],
+      });
+    }
+    if (params.command === "sql.format" && document) {
+      this.connection.workspace.applyEdit({
+        documentChanges: [
+          {
+            textDocument: versionedTextDocumentIdentifier,
+            edits: [
+              {
+                range: {
+                  start: { line: 0, character: 0 },
+                  end: {
+                    line: Number.MAX_SAFE_INTEGER,
+                    character: Number.MAX_SAFE_INTEGER,
+                  },
+                },
+                newText: format(document.getText()),
+              },
+            ],
+          },
+        ],
+      });
+    }
+  }
 
   // protected hover(params: TextDocumentPositionParams): Thenable<Hover | null> {
   //   const document = this.documents.get(params.textDocument.uri);

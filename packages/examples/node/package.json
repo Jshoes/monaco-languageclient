@@ -9,6 +9,7 @@
     "express": "^4.17.3",
     "normalize-url": "^7.0.3",
     "request-light": "^0.5.7",
+    "sql-formatter": "^4.0.2",
     "sqlint": "^1.2.1",
     "vscode-json-languageservice": "^4.2.1",
     "vscode-languageserver": "7.0.0",
