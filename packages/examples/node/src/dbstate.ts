@@ -4,8 +4,6 @@ const disConnectedStatus = "disconnected";
 
 export default class DbState {
   private connection: mysql.Connection;
-  private tables: string[] = [];
-  private databases: string[] = [];
   constructor() {
     this.connection = mysql.createConnection({
       host: "127.0.0.1",
@@ -19,43 +17,41 @@ export default class DbState {
     this.queryDatabases();
   }
 
-  private queryTables() {
-    this.connection.query(
-      "SELECT TABLE_NAME,TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='mysql';",
-      (_, result) => {
-        if (this.isConnectionDisConnected()) {
-          return;
+  public queryTables(): Promise<string[]> {
+    return new Promise((res) => {
+      this.connection.query(
+        "SELECT TABLE_NAME,TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='mysql';",
+        (_, result) => {
+          if (this.isConnectionDisConnected()) {
+            return;
+          }
+          // console.log(result);
+          res(result.map((it: any) => it.TABLE_NAME));
         }
-        // console.log(result);
-        this.tables = result.map((it: any) => it.TABLE_NAME);
-      }
-    );
-  }
-
-  private queryDatabases() {
-    this.connection.query("show databases;", (_, result) => {
-      if (this.isConnectionDisConnected()) {
-        return;
-      }
-      this.databases = result.map((r: any) => r.Database);
+      );
     });
   }
 
-  public getTables() {
-    return this.tables;
+  public queryDatabases(): Promise<string[]> {
+    return new Promise((res) => {
+      this.connection.query("show databases;", (_, result) => {
+        if (this.isConnectionDisConnected()) {
+          return;
+        }
+        res(result.map((r: any) => r.Database));
+      });
+    });
   }
 
-  public getDatabases() {
-    return this.databases;
-  }
-
-  public queryColumns(tableName: string, callback: (result: any) => void) {
-    this.connection.query(
-      `select COLUMN_NAME from information_schema.COLUMNS where table_name = "${tableName}";`,
-      (_, result) => {
-        callback(this.isConnectionDisConnected() ? [] : result);
-      }
-    );
+  public queryColumns(tableName: string): Promise<string[]> {
+    return new Promise((res) => {
+      this.connection.query(
+        `select COLUMN_NAME from information_schema.COLUMNS where table_name = "${tableName}";`,
+        (_, result) => {
+          res(this.isConnectionDisConnected() ? [] : result);
+        }
+      );
+    });
   }
 
   //   public getColumns() {}

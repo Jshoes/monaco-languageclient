@@ -312,23 +312,21 @@ export class SQLLspServer {
     // );
 
     if (completionType === "columns") {
-      return new Promise((res) => {
-        const tableName = "";
-        this.DbState.queryColumns(tableName, (result) => {
-          res(
-            result.map((t: string) => ({
-              label: t,
-              kind: 2,
-              detail: "columns",
-            }))
-          );
-        });
+      return new Promise(async (res) => {
+        const columns = await this.DbState.queryColumns("");
+        res(
+          columns.map((t: string) => ({
+            label: t,
+            kind: 2,
+            detail: "columns",
+          }))
+        );
       });
     }
 
     if (completionType === "table") {
-      const tables = this.DbState.getTables();
-      return new Promise((res) => {
+      return new Promise(async (res) => {
+        const tables = await this.DbState.queryTables();
         res(
           tables.map((t: string) => ({
             label: t,
@@ -339,8 +337,8 @@ export class SQLLspServer {
       });
     }
     if (completionType === "database") {
-      const dbs = this.DbState.getDatabases();
-      return new Promise((res) => {
+      return new Promise(async (res) => {
+        const dbs = await this.DbState.queryDatabases();
         res(
           dbs.map((t: string) => ({
             label: t,
