@@ -54,6 +54,14 @@ export default class DbState {
     });
   }
 
+  public query(queryStr: string): Promise<any> {
+    return new Promise((res) => {
+      this.connection.query(queryStr, (_, result) => {
+        res(result);
+      });
+    });
+  }
+
   //   public getColumns() {}
 
   private isConnectionDisConnected(): boolean {

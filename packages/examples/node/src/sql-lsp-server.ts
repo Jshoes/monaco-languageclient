@@ -15,6 +15,7 @@ import {
   // DocumentSymbolParams,
   createConnection,
 } from "vscode-languageserver/lib/node/main";
+import * as Parser from "editor_parser";
 import { mysqlKeywords } from "./mysqlKeywords";
 import {
   Diagnostic,
@@ -77,8 +78,12 @@ export class SQLLspServer {
     NodeJS.Timeout
   >();
 
+  private context: Parser.EditorContext;
+
   constructor(protected readonly connection: _Connection) {
     this.DbState = new DbState();
+    this.context = new Parser.EditorContext();
+    this.context.dataSourceName = "MYSQL";
     this.documents.listen(this.connection);
     this.documents.onDidChangeContent((change) =>
       this.validate(change.document)
@@ -293,7 +298,7 @@ export class SQLLspServer {
     if (!document) {
       return Promise.resolve(null);
     }
-
+    console.log(this.context, params);
     const completionType = this.getCompletionType();
     // console.log(this.DbState.getTables());
     // const jsonDocument = this.getJSONDocument(document);
@@ -310,6 +315,24 @@ export class SQLLspServer {
     //   "----",
     //   antrlObj.getChild(0).toStringTree()
     // );
+
+    // this.DbState.query("select connection_id() as cid;select database();").then(
+    //   (d) => console.log("connectionId", d, "params", document.getText())
+    // );
+    return new Promise(async (res) => {
+      const cidArray = await this.DbState.query(
+        "select connection_id() as cid;"
+      );
+      const db = await this.DbState.query("select database() as db;");
+      this.context.cpId = cidArray[0]["cid"];
+      this.context.dataBaseName = db[0]["db"];
+      this.context.command = document.getText();
+      this.context.rangeOffset = params?.position?.character;
+      const { isSucceed, errorMarkList, expectList } =
+        Parser.EditorParser.parse(this.context);
+      console.log(isSucceed, errorMarkList);
+      res(expectList);
+    });
 
     if (completionType === "columns") {
       return new Promise(async (res) => {

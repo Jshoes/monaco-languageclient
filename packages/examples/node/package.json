@@ -6,6 +6,7 @@
     "@codingame/monaco-jsonrpc": "^0.3.1",
     "@types/ws": "^8.5.3",
     "antlr4ts-sql": "^1.1.0",
+    "editor_parser": "^1.0.13",
     "express": "^4.17.3",
     "normalize-url": "^7.0.3",
     "request-light": "^0.5.7",
